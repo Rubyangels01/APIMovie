@@ -1,0 +1,8 @@
+# user_server/Dockerfile
+FROM node:16  # Sử dụng Node.js phiên bản mới hơn
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+EXPOSE 3000
+CMD ["node", "server.js"]

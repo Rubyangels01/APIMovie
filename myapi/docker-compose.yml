@@ -1,0 +1,19 @@
+version: '3.8'
+services:
+  user-server:
+    build:
+      context: .
+      dockerfile: dockerFile.user
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+
+  movie-server:
+    build:
+      context: .
+      dockerfile: dockerFile.movie
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=production
