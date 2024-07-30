@@ -107,7 +107,7 @@ exports.getShowDateOfMovie = async (req, res) => {
         const pool = await poolPromise;
         const result = await pool.request()
             .input('idMovie', sql.Int, idmovie)
-            .query('SELECT DISTINCT CAST(s.ShowDate AS DATE) AS dateShow FROM SCHEDULESHOW s WHERE s.IDMovie = @idMovie  AND s.ShowDate > GETDATE();');
+            .query('SELECT DISTINCT CAST(s.ShowDate AS DATE) AS dateShow FROM SCHEDULESHOW s WHERE s.IDMovie = @idMovie AND CAST(s.ShowDate AS DATE) >= CAST(GETDATE() AS DATE);');
 
         
         const dateShow = result.recordset;

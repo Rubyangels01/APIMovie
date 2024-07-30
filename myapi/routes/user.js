@@ -4,7 +4,9 @@ const userController = require('../controllers/userController');
 const auth = require('../middleware/auth');
 
 router.post('/register', userController.createUser);
+router.post('/manager/sigin', userController.createManager);
 router.post('/login', userController.login);
+router.post('/manager/login', userController.loginManager);
 router.get('/user/:id', userController.getUserByID);
 router.get('/listuser',userController.getAllUsers);
 router.put('/user/:idUser/update',userController.updateAccount);

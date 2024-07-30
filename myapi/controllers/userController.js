@@ -59,6 +59,57 @@ exports.login = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 };
+exports.loginManager = async (req, res) => {
+    const { Email, PassWord } = req.body;
+    try {
+        const pool = await poolPromise;
+        if (!Email || !PassWord) {
+            return res.status(400).json({
+                code: 400,
+                message: 'Email or password is empty'
+            });
+        }
+        const result = await pool.request()
+            .input('Email', sql.VarChar, Email)
+            .query('SELECT * FROM MANAGERS  WHERE Email = @Email');
+
+        
+        if (result.recordset.length === 0) {
+            return res.status(400).json({ 
+                code:400,
+                message: 'Invalid email or password' });
+        }
+
+        const user = result.recordset[0];
+        const isPasswordMatch = await bcrypt.compare(PassWord, user.PassWord); // So sánh mật khẩu
+
+        if (!isPasswordMatch) {
+            return res.status(400).json({ 
+                code:400,
+                message: 'Invalid email or password' });
+        }
+        // Tạo JWT nếu mật khẩu khớp và vai trò là hợp lệ
+        //const token = jwt.sign({ id: user.ID, email: user.Email, role: user.Role }, secretKey, { expiresIn: '1h' });
+
+        res.status(201).json({
+           
+            code: 201,
+            message: 'success',
+            data: {
+                "IDManager":user.IDManager,
+                "FullName":user.FullName,
+                "Email":user.Email,
+                "PassWord":user.PassWord,
+                "Phone":user.Phone,
+                "Age":user.Age,
+                "Gender":user.Gender,
+                "Status":user.Status
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
 
 exports.getUserByID = async (req, res) => {
     const userId = req.params.id; // Lấy id người dùng từ request parameter
@@ -134,7 +185,48 @@ exports.createUser = async (req, res) => {
     }
 };
 
+exports.createManager = async (req, res) => {
+    const {email, password, age, username, phone, gender } = req.body;
 
+    try {
+        const pool = await poolPromise;
+
+        // Kiểm tra xem email đã tồn tại trong cơ sở dữ liệu
+        const emailCheckResult = await pool.request()
+            .input('email', sql.VarChar, email)
+            .query('SELECT COUNT(*) AS emailCount FROM MANAGERS WHERE email = @email');
+
+        // Nếu email đã tồn tại, trả về lỗi
+        if (emailCheckResult.recordset[0].emailCount > 0) {
+            return res.status(400).json({
+                code:400,
+                message: 'Email already exists' });
+        }
+
+        // Hash mật khẩu và lấy substring có độ dài tối đa là 20 ký tự
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Thêm người dùng vào cơ sở dữ liệu và lấy thông tin chi tiết từ insertResult
+        const insertResult = await pool.request()
+            .input('age', sql.Date, age)
+            .input('username', sql.NVarChar, username)
+            .input('phone', sql.VarChar, phone)
+            .input('gender',sql.NVarChar, gender)
+            .input('email', sql.VarChar, email)
+            .input('password', sql.VarChar, hashedPassword)
+            .query('EXEC ADD_ACCOUNT_MANAGER @Email = @email, @Password = @password,@Age = @age, @FullName = @username,@Phone = @phone,@Gender = @gender;');
+    
+        // Trả về thông tin chi tiết từ insertResult
+        res.status(201).json({ 
+            code: 201,
+            message: 'success', 
+            insertedUser: insertResult.recordset[0] // Thông tin chi tiết của người dùng vừa được thêm vào
+        });
+
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+};
 
 
 exports.getAllUsers = async (req, res) => {

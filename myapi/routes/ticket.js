@@ -17,6 +17,7 @@ router.get('/customer/:idUser', ticketController.GetTicketByIDUser);
 router.get('/customer/:idUser/ordered', ticketController.GetOrderedByIDUser);
 router.get('/chair/bill/:idBill', ticketController.GetChairByIDBill);
 router.get('/room/bill/:idBill', ticketController.GetRoomByIDBill);
+router.post('/bill/customer/:idUser', ticketController.createBillAndTicket);
 
 
 

@@ -12,9 +12,9 @@ exports.getAllMovies = async (req, res) => {
         const result = await pool.request().query('SELECT * FROM MOVIE');
         res.status(200).json(
             {
-                'code':200,
-                'message':'success',
-                'data': result.recordset
+                code:200,
+                message:'success',
+                data: result.recordset
             }
         );
     } catch (err) {
@@ -28,7 +28,7 @@ exports.getMovieByID = async (req, res) =>
             const pool = await poolPromise;
             const result = await pool.request()
             .input('idMovie',sql.Int,idMovie)
-            .query('SELECT * FROM MOVIES WHERE IDMOVIE = @idMovie');
+            .query('SELECT * FROM MOVIE WHERE IDMOVIE = @idMovie');
             if(result.recordset.length === 0)
                 {
                     return res.status(404).json(
@@ -67,7 +67,7 @@ exports.getMovieByID = async (req, res) =>
         }
         try {
             const pool = await poolPromise;
-            const imageUrl = `http://192.168.1.12:3002/${image.replace(/\\/g, '/')}`;
+            const imageUrl = `http://192.168.1.8:3002/${image.replace(/\\/g, '/')}`;
            
     
             const insertResult = await pool.request()
@@ -150,32 +150,41 @@ exports.getMovieByID = async (req, res) =>
     };
     
     exports.createMovie = async (req, res) => {
-
-        const { namemovie, time, description,releaseddate,language,cast } = req.body;
+        const { namemovie, time, description, releaseddate, language, cast, price } = req.body;
         const image = req.file ? req.file.path : null;
-
+    
         if (!image) {
             return res.status(400).json({
                 code: 400,
                 message: 'Image is required'
             });
         }
-
+    
+        const imageUrl = `http://192.168.1.8:3002/${image.replace(/\\/g, '/')}`;
+    
         try {
             const pool = await poolPromise;
-            const imageUrl = `http://192.168.1.12:3002/${image.replace(/\\/g, '/')}`;
-
-
-            const insertResult = await pool.request()
+            
+            // Bắt đầu giao dịch
+            const transaction = new sql.Transaction(pool);
+    
+            await transaction.begin(); // Bắt đầu giao dịch
+    
+            const request = new sql.Request(transaction);
+    
+            const insertResult = await request
                 .input('namemovie', sql.NVarChar, namemovie)
                 .input('image', sql.VarChar, imageUrl)
                 .input('time', sql.Int, time)
-                .input('description',sql.Text,description)
-                .input('releaseddate', sql.Date,releaseddate)
-                .input('language', sql.NVarChar,language)
-                .input('cast',sql.NVarChar,cast)
-                
-                .query('INSERT INTO MOVIE (namemovie,image, time,description,releaseddate,language,cast) OUTPUT INSERTED.* VALUES (@namemovie,@image, @time,@description,@releaseddate,@language,@cast)');
+                .input('description', sql.Text, description)
+                .input('releaseddate', sql.Date, releaseddate)
+                .input('language', sql.NVarChar, language)
+                .input('cast', sql.NVarChar, cast)
+                .input('price', sql.NVarChar, price)
+                .query('INSERT INTO MOVIE (namemovie, image, time, description, releaseddate, language, cast, pricemovie) OUTPUT INSERTED.* VALUES (@namemovie, @image, @time, @description, @releaseddate, @language, @cast, @price)');
+    
+            // Commit giao dịch
+            await transaction.commit();
     
             res.status(201).json({
                 code: 201,
@@ -184,12 +193,18 @@ exports.getMovieByID = async (req, res) =>
             });
     
         } catch (err) {
+            // Rollback giao dịch trong trường hợp có lỗi
+            if (transaction) {
+                await transaction.rollback();
+            }
+    
             res.status(500).json({
                 code: 500,
                 message: err.message
             });
         }
     };
+    
     
     exports.updateRoom = async (req, res) => {
         const { nameroom } = req.body;
