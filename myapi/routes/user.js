@@ -11,6 +11,7 @@ router.get('/user/:id', userController.getUserByID);
 router.get('/listuser',userController.getAllUsers);
 router.put('/user/:idUser/update',userController.updateAccount);
 router.put('/user/:idUser/password',userController.updatePassWord);
+router.get('/theater/user/:Email', userController.GetTheaterByUser);
 // router.post('/createUser',userController.createUser);
 
 module.exports = router;

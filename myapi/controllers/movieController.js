@@ -9,7 +9,7 @@ const jwt = require('jsonwebtoken');
 exports.getAllMovies = async (req, res) => {
     try {
         const pool = await poolPromise;
-        const result = await pool.request().query('SELECT * FROM MOVIE');
+        const result = await pool.request().query('EXEC GetMoviesWithMostTickets');
         res.status(200).json(
             {
                 code:200,
@@ -21,6 +21,23 @@ exports.getAllMovies = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 };
+exports.GetUpcomingMovies = async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request().query('EXEC GetUpcomingMovies');
+        res.status(200).json(
+            {
+                code:200,
+                message:'success',
+                data: result.recordset
+            }
+        );
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+
 exports.getMovieByID = async (req, res) =>
     {
         const idMovie = req.params.id;
@@ -150,7 +167,7 @@ exports.getMovieByID = async (req, res) =>
     };
     
     exports.createMovie = async (req, res) => {
-        const { namemovie, time, description, releaseddate, language, cast, price } = req.body;
+        const { namemovie, time, description, releaseddate, language, cast, price,status } = req.body;
         const image = req.file ? req.file.path : null;
     
         if (!image) {
@@ -181,7 +198,8 @@ exports.getMovieByID = async (req, res) =>
                 .input('language', sql.NVarChar, language)
                 .input('cast', sql.NVarChar, cast)
                 .input('price', sql.NVarChar, price)
-                .query('INSERT INTO MOVIE (namemovie, image, time, description, releaseddate, language, cast, pricemovie) OUTPUT INSERTED.* VALUES (@namemovie, @image, @time, @description, @releaseddate, @language, @cast, @price)');
+                .input('status', sql.Int, status)
+                .query('INSERT INTO MOVIE (namemovie, image, time, description, releaseddate, language, cast, pricemovie,status) OUTPUT INSERTED.* VALUES (@namemovie, @image, @time, @description, @releaseddate, @language, @cast, @price, @status)');
     
             // Commit giao dịch
             await transaction.commit();
@@ -253,6 +271,9 @@ exports.getMovieByID = async (req, res) =>
             });
         }
     };
+
+    
+    
     
 
     exports.getallRoomByTheater = async (req, res) => {
@@ -281,44 +302,35 @@ exports.getMovieByID = async (req, res) =>
     
     
     exports.createSchedule = async (req, res) => {
-        const { idmovie, idroom, showdate, listtimeshow } = req.body;
+        const { IDMovie,IDRoom,ShowDate,IDManager} = req.body;
     
         // Kiểm tra các tham số đầu vào
-        if (idmovie == null) {
-            return res.status(400).json({
-                code: 400,
-                message: 'idmovie is null'
-            });
-        } else if (idroom == null) {
-            return res.status(400).json({
-                code: 400,
-                message: 'idroom is null'
-            });
-        } else if (showdate == null) {
-            return res.status(400).json({
-                code: 400,
-                message: 'showdate is null'
-            });
-        } else if (listtimeshow == null) {
-            return res.status(400).json({
-                code: 400,
-                message: 'listtimeshow is null'
-            });
-        }
+        
     
         const pool = await poolPromise;
         const transaction = new sql.Transaction(pool);
     
         try {
+            const date = moment(ShowDate, 'YYYY-MM-DDTHH:mm:ss');
+            
+            if (!date.isValid()) {
+                return res.status(400).json({
+                    code: 400,
+                    message: 'Invalid StartTime format'
+                });
+            }
+    
+            // Định dạng lại ngày giờ
+            const formattedDate = date.format('YYYY-MM-DD HH:mm:ss');
             await transaction.begin();
     
             const request = new sql.Request(transaction);
             const insertResult = await request
-                .input('idmovie', sql.Int, idmovie)
-                .input('idroom', sql.Int, idroom)
-                .input('showdate', sql.Date, showdate)
-                .input('listtimeshow', sql.VarChar, listtimeshow)
-                .query('INSERT INTO DETAILMOVIE (idmovie, idroom, showdate, listtimeshow) OUTPUT INSERTED.* VALUES (@idmovie, @idroom, @showdate, @listtimeshow)');
+                .input('IDMovie', sql.Int, IDMovie)
+                .input('IDRoom', sql.Int, IDRoom)
+                .input('ShowDate', sql.VarChar, formattedDate)
+                .input('IDManager', sql.Int, IDManager)
+                .query('INSERT INTO SCHEDULESHOW (IDMovie, IDRoom, ShowDate, IDManager) OUTPUT INSERTED.* VALUES (@IDMovie, @IDRoom, @ShowDate, @IDManager)');
     
             await transaction.commit();
     
@@ -389,60 +401,66 @@ exports.getMovieByID = async (req, res) =>
     
         return showtimes;
     }
-exports.getRoomNotHaveMovieByIDTheater = async (req, res) => {
-    const idtheater = req.params.idTheater;
-    const idmovie = req.query.idMovie;
-    const showdate = req.query.showDate;
-
-    if(idmovie == null)
-        {
-            res.status(400).json({
+    const moment = require('moment');
+    
+    
+    exports.getRoomNotHaveMovieByIDTheater = async (req, res) => {
+        const idTheater = req.params.idTheater;
+        const startTime = req.query.StartTime;
+        const duration = req.query.Duration;
+    
+        if (!idTheater || !startTime || !duration) {
+            return res.status(400).json({
                 code: 400,
-                message: 'Not Found Movie',
-                
-            }); 
+                message: 'Missing required parameters'
+            });
         }
-        if(idtheater == null)
-            {
-                res.status(400).json({
-                    code: 400,
-                    message: 'Not Found Theater',
-                    
-                }); 
-            }
-
-    try {
-        const pool = await poolPromise;
-        const result = await pool.request()
-            .input('idmovie', sql.Int, idmovie)
-            .input('idtheater', sql.Int, idtheater)
-            .input('showdate', sql.Date, showdate)
-            .query('EXEC GETROOMNOTHAVESCHEDULEBYMOVIE @idtheater = @idtheater,@idMovie = @idmovie, @showDate = @showdate');
-        
+    
+        try {
+            const date = moment(startTime, 'YYYY-MM-DDTHH:mm:ss');
             
+            if (!date.isValid()) {
+                return res.status(400).json({
+                    code: 400,
+                    message: 'Invalid StartTime format'
+                });
+            }
+    
+            // Định dạng lại ngày giờ
+            const formattedDate = date.format('YYYY-MM-DD HH:mm:ss');
+    
+            const pool = await poolPromise;
+            const result = await pool.request()
+                .input('StartTime', sql.VarChar, formattedDate)
+                .input('IDTheater', sql.Int, idTheater)
+                .input('Duration', sql.Int, duration)
+                .query('EXEC GetRoomNotSchedule @IDTheater = @IDTheater, @StartTime = @StartTime, @Duration = @Duration');
+    
             if (result.recordset.length > 0 && result.recordset[0].ErrorMessage) {
-                // Xử lý thông báo lỗi
+                // Xử lý thông báo lỗi từ stored procedure
                 return res.status(400).json({ 
                     code: 400,
-                    message: result.recordset[0].ErrorMessage });
+                    message: result.recordset[0].ErrorMessage 
+                });
             } else {
                 // Trả về dữ liệu phòng
                 return res.status(200).json({
                     code: 200,
-                    message: 'success',
+                    message: 'Success',
+                    StartTime: formattedDate,
+                    Duration: duration,
                     data: result.recordset
                 });
-            }          
-        
-
-    } catch (err) {
-        console.error('Error get room:', err);
-        res.status(500).json({
-            code: 500,
-            message: 'Error get room'
-        });
-    }
-};
+            }
+        } catch (err) {
+            console.error('Error getting room:', err);
+            res.status(500).json({
+                code: 500,
+                message: 'Error getting room'
+            });
+        }
+    };
+    
 
 exports.createScheduleIntemp = async (req, res) => {
     const { idmovie, idroom, showdate, listtimeshow } = req.body;
@@ -600,3 +618,61 @@ exports.getMovieByNameMovie = async (req, res) => {
         });
     }
 };
+
+exports.getMovieScheduleByTheaterandDate = async (req, res) => {
+    const ShowDate = req.query.ShowDate;
+    const idTheater = req.params.idTheater;
+
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request()
+            .input('ShowDate', sql.Date, ShowDate)
+            .input('IDTheater', sql.Int, idTheater)
+            .query('EXEC GetMovieScheduleByTheaterAndDate @IDTheater,@ShowDate');
+
+        res.status(200).json({
+            code: 200,
+            message: 'success',
+            data: result.recordset
+        });
+    } catch (err) {
+        console.error('Error details:', err); // Ghi log lỗi chi tiết
+        res.status(500).json({
+            code: 500,
+            message: 'Error retrieving movie',
+            error: err.message // Trả về thông điệp lỗi chi tiết
+        });
+    }
+};
+
+
+exports.getShowtimeOfMovie = async (req, res) => {
+    const ShowDate = req.query.ShowDate;
+    const IDMovie = req.query.IDMovie;
+    const idTheater = req.params.idTheater;
+
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request()
+            .input('ShowDate', sql.Date, ShowDate)
+            .input('IDMovie', sql.Int, IDMovie)
+            .input('IDTheater', sql.Int, idTheater)
+            .query('EXEC GetShowTimes @IDMovie,@IDTheater,@ShowDate;');
+
+        res.status(200).json({
+            code: 200,
+            message: 'success',
+            data: result.recordset
+        });
+    } catch (err) {
+        console.error('Error details:', err); // Ghi log lỗi chi tiết
+        res.status(500).json({
+            code: 500,
+            message: 'Error retrieving movie',
+            error: err.message // Trả về thông điệp lỗi chi tiết
+        });
+    }
+};
+
+
+

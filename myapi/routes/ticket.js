@@ -11,13 +11,20 @@ router.get('/ticket/:idMovie', ticketController.getNumberTicketAndRevenue);
 router.get('/showdate/movie/:idMovie',ticketController.getShowDateOfMovie);
 router.get('/hourshow/movie',ticketController.getHourShowOfDate);
 router.get('/theaters/movie/:idMovie',ticketController.getTheatersShowAndhourShow);
-router.put('/chair/:idChair/room/:idRoom',ticketController.updateChair);
+
 router.get('/movie/:idMovie/room', ticketController.getRoomBySchedule);
 router.get('/customer/:idUser', ticketController.GetTicketByIDUser);
+router.get('/customer/:IDCustomer/bill/:idBill', ticketController.GetTicketByIDUserAndBill);
 router.get('/customer/:idUser/ordered', ticketController.GetOrderedByIDUser);
 router.get('/chair/bill/:idBill', ticketController.GetChairByIDBill);
 router.get('/room/bill/:idBill', ticketController.GetRoomByIDBill);
-router.post('/bill/customer/:idUser', ticketController.createBillAndTicket);
+router.post('/ticket/save', ticketController.createBillAndTicket);
+router.get('/chairs/room/:idRoom',ticketController.getAllChair);
+router.post('/ticket/customer/:IDCustomer',ticketController.saveBill);
+router.get('/revenue/movie/:IDMovie/theater/:IDTheater', ticketController.GetRevenue);
+router.get('/revenue/theater/:IDTheater', ticketController.GetAllRevenue);
+router.get('/room/showing/theater/:IDTheater', ticketController.GetAllRoomCurrentShowing);
+router.put('/chair/:idChair/room/:idRoom', ticketController.updateChair);
 
 
 

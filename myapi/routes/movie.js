@@ -9,9 +9,14 @@ const path = require('path');
 
 
 router.get('/listmovie', movieController.getAllMovies);
-router.get('/movie/namemovie', movieController.getMovieByNameMovie);
-router.get('/movie/:id', movieController.getMovieByID);
+router.get('/listmovie/upcoming', movieController.GetUpcomingMovies);
 
+router.get('/movie/namemovie', movieController.getMovieByNameMovie);
+router.get('/schedule/theater/:idTheater', movieController.getMovieScheduleByTheaterandDate);
+router.get('/showtime/theater/:idTheater', movieController.getShowtimeOfMovie);
+router.get('/movie/:id', movieController.getMovieByID);
+router.get('/rooms/theater/:idTheater/movie', movieController.getRoomNotHaveMovieByIDTheater);
+router.post('/schedule/theater',movieController.createSchedule);
 const storage1 = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, 'uploads/imagetheater/'); // Thư mục lưu trữ ảnh
@@ -38,8 +43,9 @@ const upload = multer({ storage: storage });
 router.post('/movie', upload.single('image'), movieController.createMovie);
 
 router.put('/room/:idRoom', movieController.updateRoom);
+
 router.get('/rooms/theaters/:idTheater', movieController.getallRoomByTheater);
-router.get('/rooms/theater/:idTheater/movie', movieController.getRoomNotHaveMovieByIDTheater);
+
 router.post('/movie/schedule', movieController.GetDataIntemp);
 router.get('/movie/:idMovie/schedules', movieController.getSchedules);
 

@@ -143,7 +143,7 @@ exports.getUserByID = async (req, res) => {
 };
 
 exports.createUser = async (req, res) => {
-    const {email, password, age, username, phone, gender } = req.body;
+    const {email, password, username, phone} = req.body;
 
     try {
         const pool = await poolPromise;
@@ -165,13 +165,14 @@ exports.createUser = async (req, res) => {
 
         // Thêm người dùng vào cơ sở dữ liệu và lấy thông tin chi tiết từ insertResult
         const insertResult = await pool.request()
-            .input('age', sql.Date, age)
+            
             .input('username', sql.NVarChar, username)
             .input('phone', sql.VarChar, phone)
-            .input('gender',sql.NVarChar, gender)
+            
+            
             .input('email', sql.VarChar, email)
             .input('password', sql.VarChar, hashedPassword)
-            .query('EXEC ADD_ACCOUNT_USER @Email = @email, @Password = @password,@Age = @age, @FullName = @username,@Phone = @phone,@Gender = @gender;');
+            .query('EXEC ADD_ACCOUNT_USER @Email = @email, @Password = @password, @FullName = @username,@Phone = @phone;');
     
         // Trả về thông tin chi tiết từ insertResult
         res.status(201).json({ 
@@ -232,7 +233,7 @@ exports.createManager = async (req, res) => {
 exports.getAllUsers = async (req, res) => {
     try {
         const pool = await poolPromise;
-        const result = await pool.request().query('SELECT * FROM Users');
+        const result = await pool.request().query('SELECT * FROM MANAGERS');
         res.status(200).json(
             {
                 'code':200,
@@ -370,5 +371,24 @@ exports.updatePassWord = async (req, res) => {
             code: 500,
             message: 'Internal server error'
         });
+    }
+};
+
+exports.GetTheaterByUser = async (req, res) => {
+    const Email = req.params.Email
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request()
+        .input("Email",sql.NVarChar,Email)
+        .query('EXEC GetTheatersByManagerEmail @Email');
+        res.status(200).json(
+            {
+                code:200,
+                message:'success',
+                data: result.recordset
+            }
+        );
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 };
