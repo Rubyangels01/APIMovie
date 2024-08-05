@@ -546,20 +546,28 @@ exports.createBillAndTicket = async (req, res) => {
 exports.updateChair = async (req, res) => {
     const idChair = req.params.idChair;
     const idRoom = req.params.idRoom;
-    const status = req.query.status; 
+    const showDate = req.query.showDate; 
     
     try {
         const pool = await poolPromise;
+        const date = moment(showDate, 'YYYY-MM-DDTHH:mm:ss');
+            
+        if (!date.isValid()) {
+            return res.status(400).json({
+                code: 400,
+                message: 'Invalid StartTime format'
+            });
+        }
 
+        // Định dạng lại ngày giờ
+        const formattedDate = date.format('YYYY-MM-DD HH:mm:ss');
         // Thực hiện cập nhật và kiểm tra số lượng bản ghi bị ảnh hưởng
         const result = await pool.request()
-            .input('idChair', sql.Int, idChair)
-            .input('idRoom', sql.Int, idRoom)
-            .input('status', sql.Int, status)
+            .input('IDChair', sql.Int, idChair)
+            .input('IDRoom', sql.Int, idRoom)
+            .input('ShowDate', sql.VarChar, formattedDate)
             .query(`
-                UPDATE DETAILCHAIR 
-                SET Status = @status
-                WHERE IDChair = @idChair AND IDRoom = @idRoom
+                EXEC InsertSeatStatus @ShowDate,@IDChair,@IDRoom
             `);
 
         // Kiểm tra số lượng bản ghi bị ảnh hưởng
@@ -585,14 +593,77 @@ exports.updateChair = async (req, res) => {
     }
 };
 
-exports.getAllChair = async (req, res) => {
+exports.deteleStatusChair = async (req, res) => {
+    const idChair = req.params.idChair;
     const idRoom = req.params.idRoom;
- 
+    const showDate = req.query.showDate; 
+    
     try {
         const pool = await poolPromise;
+        const date = moment(showDate, 'YYYY-MM-DDTHH:mm:ss');
+            
+        if (!date.isValid()) {
+            return res.status(400).json({
+                code: 400,
+                message: 'Invalid StartTime format'
+            });
+        }
+
+        // Định dạng lại ngày giờ
+        const formattedDate = date.format('YYYY-MM-DD HH:mm:ss');
+        // Thực hiện cập nhật và kiểm tra số lượng bản ghi bị ảnh hưởng
+        const result = await pool.request()
+            .input('IDChair', sql.Int, idChair)
+            .input('IDRoom', sql.Int, idRoom)
+            .input('ShowDate', sql.VarChar, formattedDate)
+            .query(`
+                EXEC DeleteSeatStatus @ShowDate,@IDChair,@IDRoom
+            `);
+
+        // Kiểm tra số lượng bản ghi bị ảnh hưởng
+        if (result.rowsAffected[0] > 0) {
+            res.status(201).json({
+                code: 201,
+                message: 'Delate successful',
+                data: 1
+            });
+        } else {
+            res.status(404).json({
+                code: 404,
+                message: 'No record found to update',
+                data: 0
+            });
+        }
+
+    } catch (err) {
+        res.status(500).json({
+            code: 500,
+            message: err.message
+        });
+    }
+};
+exports.getAllChair = async (req, res) => {
+    const idRoom = req.params.idRoom;
+    const showDate = req.query.showDate;
+ 
+    try {
+        
+        const pool = await poolPromise;
+        const date = moment(showDate, 'YYYY-MM-DDTHH:mm:ss');
+            
+        if (!date.isValid()) {
+            return res.status(400).json({
+                code: 400,
+                message: 'Invalid StartTime format'
+            });
+        }
+
+        // Định dạng lại ngày giờ
+        const formattedDate = date.format('YYYY-MM-DD HH:mm:ss');
         const result = await pool.request()
             .input("IDRoom", sql.Int,idRoom)
-            .query('EXEC GetChairsStatusByRoom @IDRoom');
+            .input("ShowDate",sql.VarChar,formattedDate)
+            .query('EXEC GetChairsStatusByRoom @IDRoom,@ShowDate');
 
         
         
@@ -670,6 +741,24 @@ exports.GetRevenue = async (req, res) => {
          const result = await pool.request()
          .input("IDTheater",sql.Int,IDTheater)
          .query('EXEC GetAllRevenuOfMovie @IDTheater');
+         res.status(200).json(
+             {
+                 code:200,
+                 message:'success',
+                 data: result.recordset
+             }
+         );
+     } catch (err) {
+         res.status(500).json({ message: err.message });
+     }
+ };
+ exports.GetAllRevenueOfMovie = async (req, res) => {
+    const idMovie  =req.params.idMovie;
+     try {
+         const pool = await poolPromise;
+         const result = await pool.request()
+         .input("IDMovie",sql.Int,idMovie)
+         .query('EXEC GetAllMovieStatistics @IDMovie');
          res.status(200).json(
              {
                  code:200,
