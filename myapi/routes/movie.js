@@ -10,11 +10,14 @@ const path = require('path');
 
 router.get('/listmovie', movieController.getAllMovies);
 router.get('/listmovie/upcoming', movieController.GetUpcomingMovies);
-
+router.get('/theaters', movieController.getAllTheater);
+router.get('/theater/:idTheater', movieController.getAllMovieByTheater);
 router.get('/movie/namemovie', movieController.getMovieByNameMovie);
+router.get('/ticket/movie/:idMovie', movieController.getTicketMovie);
 router.get('/schedule/theater/:idTheater', movieController.getMovieScheduleByTheaterandDate);
 router.get('/showtime/theater/:idTheater', movieController.getShowtimeOfMovie);
 router.get('/movie/:id', movieController.getMovieByID);
+router.get('/type/movie/:id', movieController.getTypeMovie);
 router.get('/rooms/theater/:idTheater/movie', movieController.getRoomNotHaveMovieByIDTheater);
 router.post('/schedule/theater',movieController.createSchedule);
 const storage1 = multer.diskStorage({

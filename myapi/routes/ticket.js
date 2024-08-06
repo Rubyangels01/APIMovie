@@ -23,10 +23,13 @@ router.get('/chairs/room/:idRoom',ticketController.getAllChair);
 router.post('/ticket/customer/:IDCustomer',ticketController.saveBill);
 router.get('/revenue/movie/:IDMovie/theater/:IDTheater', ticketController.GetRevenue);
 router.get('/revenue/theater/:IDTheater', ticketController.GetAllRevenue);
+router.get('/revenue/theater/:IDTheater/showdate', ticketController.GetAllRevenueByDate);
+
 router.get('/revenue/movie/:idMovie', ticketController.GetAllRevenueOfMovie);
 router.get('/room/showing/theater/:IDTheater', ticketController.GetAllRoomCurrentShowing);
 router.post('/chair/:idChair/room/:idRoom', ticketController.updateChair);
 router.delete('/chair/:idChair/room/:idRoom', ticketController.deteleStatusChair);
+router.get('/movie/:idMovie/room/:idRoom', ticketController.GetTicketByMovieAndShowDate);
 
 
 

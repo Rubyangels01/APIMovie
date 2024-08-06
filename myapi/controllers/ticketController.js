@@ -375,6 +375,46 @@ exports.GetTicketByIDUserAndBill = async (req, res) => {
     }
 };
 
+exports.GetTicketByMovieAndShowDate = async (req, res) => {
+    const idMovie = req.params.idMovie;
+    const idRoom = req.params.idRoom;
+    const showdate = req.query.showdate;
+    try {
+        const pool = await poolPromise;
+        const date = moment(showdate, 'YYYY-MM-DDTHH:mm:ss');
+            
+        if (!date.isValid()) {
+            return res.status(400).json({
+                code: 400,
+                message: 'Invalid StartTime format'
+            });
+        }
+
+        // Định dạng lại ngày giờ
+        const formattedDate = date.format('YYYY-MM-DD HH:mm:ss');
+        const result = await pool.request()
+            .input('IDMovie', sql.Int, idMovie) 
+            .input('IDRoom', sql.Int, idRoom) 
+            .input('ShowDate', sql.VarChar, formattedDate) 
+            
+            .query(`
+                EXEC GetTicketsByMovieAndShowDate @IDMovie,@IDRoom,@ShowDate;
+            `);
+
+        res.status(200).json({
+            code: 200,
+            message: 'success',
+            data: result.recordset
+        });
+    } catch (err) {
+        console.error(err); // In lỗi ra console để dễ dàng debug
+        res.status(500).json({
+            code: 500,
+            message: err.message
+        });
+    }
+};
+
 
 exports.GetOrderedByIDUser = async (req, res) => {
     const idUser = req.params.idUser;
@@ -741,6 +781,27 @@ exports.GetRevenue = async (req, res) => {
          const result = await pool.request()
          .input("IDTheater",sql.Int,IDTheater)
          .query('EXEC GetAllRevenuOfMovie @IDTheater');
+         res.status(200).json(
+             {
+                 code:200,
+                 message:'success',
+                 data: result.recordset
+             }
+         );
+     } catch (err) {
+         res.status(500).json({ message: err.message });
+     }
+ };
+
+ exports.GetAllRevenueByDate = async (req, res) => {
+    const IDTheater  =req.params.IDTheater;
+    const ShowDate = req.query.ShowDate;
+     try {
+         const pool = await poolPromise;
+         const result = await pool.request()
+         .input("IDTheater",sql.Int,IDTheater)
+         .input("ShowDate", sql.Date,ShowDate)
+         .query('EXEC GetAllRevenuOfMovieByDate @IDTheater,@ShowDate');
          res.status(200).json(
              {
                  code:200,

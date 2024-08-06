@@ -131,7 +131,32 @@ exports.getMovieByID = async (req, res) =>
                     message: 'Error retrieving theater' });
             }
         }
-    
+
+        
+        exports.getAllMovieByTheater = async (req, res) =>
+            {
+                const idTheater = req.params.idTheater
+                
+                try{
+                    const pool = await poolPromise;
+                    const result = await pool.request()
+                    .input("IDTheater",sql.Int,idTheater)
+                    .query('EXEC GetMoviesByTheater @IDTheater');
+                    
+                        const theater = result.recordset;
+                        res.status(200).json({
+                            code: 200,
+                            message:'success',
+                            data: theater
+                            // Thêm các thông tin khác cần thiết
+                        });
+        
+                }catch(err)
+                {
+                    res.status(500).json({ code:500,
+                        message: 'Error retrieving theater' });
+                }
+            }
 
     exports.createRoom = async (req, res) => {
         const { nameroom } = req.body;
@@ -167,7 +192,7 @@ exports.getMovieByID = async (req, res) =>
     };
     
     exports.createMovie = async (req, res) => {
-        const { namemovie, time, description, releaseddate, language, cast, price,status } = req.body;
+        const { namemovie, time, description, releaseddate, language, cast, price, status, idType } = req.body;
         const image = req.file ? req.file.path : null;
     
         if (!image) {
@@ -179,11 +204,13 @@ exports.getMovieByID = async (req, res) =>
     
         const imageUrl = `http://192.168.1.8:3002/${image.replace(/\\/g, '/')}`;
     
+        let transaction; // Định nghĩa biến transaction bên ngoài khối try
+    
         try {
             const pool = await poolPromise;
             
             // Bắt đầu giao dịch
-            const transaction = new sql.Transaction(pool);
+            transaction = new sql.Transaction(pool);
     
             await transaction.begin(); // Bắt đầu giao dịch
     
@@ -197,11 +224,19 @@ exports.getMovieByID = async (req, res) =>
                 .input('releaseddate', sql.Date, releaseddate)
                 .input('language', sql.NVarChar, language)
                 .input('cast', sql.NVarChar, cast)
-                .input('price', sql.NVarChar, price)
+                .input('price', sql.Float, price) // Thay đổi kiểu dữ liệu từ NVarChar sang Float nếu price là số
                 .input('status', sql.Int, status)
-                .query('INSERT INTO MOVIE (namemovie, image, time, description, releaseddate, language, cast, pricemovie,status) OUTPUT INSERTED.* VALUES (@namemovie, @image, @time, @description, @releaseddate, @language, @cast, @price, @status)');
+                .query('INSERT INTO MOVIE (namemovie, image, time, description, releaseddate, language, cast, pricemovie, status) OUTPUT INSERTED.IDMovie VALUES (@namemovie, @image, @time, @description, @releaseddate, @language, @cast, @price, @status)');
     
-            // Commit giao dịch
+            const idMovie = insertResult.recordset[0].IDMovie; // Lấy IDMovie từ kết quả đầu ra
+    
+            if (idMovie) {
+                await request
+                    .input('idType', sql.Int, idType)
+                    .input('idMovie', sql.Int, idMovie)
+                    .query('INSERT INTO DETAILTYPE (IDType, IDMovie) VALUES (@idType, @idMovie)');
+            }
+    
             await transaction.commit();
     
             res.status(201).json({
@@ -619,6 +654,30 @@ exports.getMovieByNameMovie = async (req, res) => {
     }
 };
 
+
+exports.getTicketMovie = async (req, res) => {
+    const idMovie = req.params.idMovie;
+
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request()
+            .input('idMovie', sql.Int, idMovie)
+            .query('select COUNT(IDMovie) As NumberTicket from TICKETS t join SCHEDULESHOW sch on sch.IDSchedule = t.IDSchedule where sch.IDMovie = @idMovie');
+
+        res.status(200).json({
+            code: 200,
+            message: 'success',
+            data: result.recordset
+        });
+    } catch (err) {
+        console.error('Error details:', err); // Ghi log lỗi chi tiết
+        res.status(500).json({
+            code: 500,
+            message: 'Error retrieving movie',
+            error: err.message // Trả về thông điệp lỗi chi tiết
+        });
+    }
+};
 exports.getMovieScheduleByTheaterandDate = async (req, res) => {
     const ShowDate = req.query.ShowDate;
     const idTheater = req.params.idTheater;
@@ -673,6 +732,30 @@ exports.getShowtimeOfMovie = async (req, res) => {
         });
     }
 };
+
+exports.getTypeMovie = async (req, res) => {
+    const IDMovie = req.params.id;
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request()
+            .input('IDMovie', sql.Int, IDMovie)
+            .query('select t.IDType,t.NameType from TYPEMOVIES  t join DETAILTYPE dt on dt.IDType = t.IDType where dt.IDMovie = @IDMovie;');
+
+        res.status(200).json({
+            code: 200,
+            message: 'success',
+            data: result.recordset
+        });
+    } catch (err) {
+        console.error('Error details:', err); // Ghi log lỗi chi tiết
+        res.status(500).json({
+            code: 500,
+            message: 'Error retrieving movie',
+            error: err.message // Trả về thông điệp lỗi chi tiết
+        });
+    }
+};
+
 
 
 
