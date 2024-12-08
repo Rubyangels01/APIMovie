@@ -1,6 +1,7 @@
 
 const { sql, poolPromise } = require('../config/database');
 const { query } = require('express');
+const Promotion = require('../models/Promotion');
 
 const jwt = require('jsonwebtoken');
 
@@ -84,7 +85,7 @@ exports.getMovieByID = async (req, res) =>
         }
         try {
             const pool = await poolPromise;
-            const imageUrl = `http://192.168.1.8:3002/${image.replace(/\\/g, '/')}`;
+            const imageUrl = `http://192.168.1.186:3002/${image.replace(/\\/g, '/')}`;
            
     
             const insertResult = await pool.request()
@@ -190,6 +191,35 @@ exports.getMovieByID = async (req, res) =>
             });
         }
     };
+
+    exports.createVoucher = async (req, res) => {
+        const promotionData = new Promotion(req.body);
+    
+    
+        try {
+            const pool = await poolPromise;
+            const insertResult = await pool.request()
+                .input('namePromotion', sql.NVarChar, promotionData.namePromotion)
+                .input('percentSell', sql.Int, promotionData.percentSell)
+                .input('totalBill', sql.VarChar, promotionData.totalBill)
+                .input('description', sql.NVarChar, promotionData.description)
+                .input('startDate', sql.Date, promotionData.startDate)
+                .input('endDate', sql.Date, promotionData.endDate)
+                .query('INSERT INTO PROMOTION (NamePromotion, StartDate, EndDate, PercentSell, Descriptiom,TotalBill) OUTPUT INSERTED.* VALUES (@namePromotion,@startDate,@endDate,@percentSell,@description,@totalBill)');
+    
+            res.status(201).json({
+                code: 201,
+                message: 'success',
+                data: insertResult.recordset[0]
+            });
+    
+        } catch (err) {
+            res.status(500).json({
+                code: 500,
+                message: err.message
+            });
+        }
+    };
     
     exports.createMovie = async (req, res) => {
         const { namemovie, time, description, releaseddate, language, cast, price, status, idType } = req.body;
@@ -202,7 +232,7 @@ exports.getMovieByID = async (req, res) =>
             });
         }
     
-        const imageUrl = `http://192.168.1.8:3002/${image.replace(/\\/g, '/')}`;
+        const imageUrl = `http://192.168.1.203:3002/${image.replace(/\\/g, '/')}`;
     
         let transaction; // Định nghĩa biến transaction bên ngoài khối try
     
@@ -309,6 +339,45 @@ exports.getMovieByID = async (req, res) =>
 
     
     
+
+exports.updateStatusMovie = async (req, res) => {
+    const { status } = req.body;
+    const idMovie = req.params.idMovie; // Đảm bảo rằng bạn đang truyền đúng tên tham số
+
+    try {
+        const pool = await poolPromise;
+
+        // Nếu có sự thay đổi thì trả về, còn nếu không có sự thay đổi (dữ liệu vẫn như cũ) thì trả về 0
+        const updateResult = await pool.request()
+            .input('status', sql.Int, status) // Thay đổi kiểu dữ liệu thành Int nếu status là số
+            .input('idMovie', sql.Int, idMovie)
+            .query(`
+                UPDATE MOVIE SET status = @status 
+                WHERE IDMovie = @idMovie;
+            `);
+
+        if (updateResult.rowsAffected[0] > 0) {
+            // Nếu cập nhật thành công
+            res.status(200).json({
+                code: 200,
+                message: 'Movie status updated successfully'
+            });
+        } else {
+            // Nếu không có bản ghi nào bị ảnh hưởng
+            res.status(404).json({
+                code: 404,
+                message: 'Movie not found or no changes made'
+            });
+        }
+
+    } catch (err) {
+        res.status(500).json({
+            code: 500,
+            message: err.message
+        });
+    }
+};
+
     
 
     exports.getallRoomByTheater = async (req, res) => {

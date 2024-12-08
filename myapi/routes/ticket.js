@@ -14,7 +14,9 @@ router.get('/theaters/movie/:idMovie',ticketController.getTheatersShowAndhourSho
 
 router.get('/movie/:idMovie/room', ticketController.getRoomBySchedule);
 router.get('/customer/:idUser', ticketController.GetTicketByIDUser);
+router.get('/customer/billrefund/:idUser', ticketController.GetTicketCancelByIDUser);
 router.get('/customer/:IDCustomer/bill/:idBill', ticketController.GetTicketByIDUserAndBill);
+router.get('/promotion/:idPromotion', ticketController.GetPromotionByID);
 router.get('/customer/:idUser/ordered', ticketController.GetOrderedByIDUser);
 router.get('/chair/bill/:idBill', ticketController.GetChairByIDBill);
 router.get('/room/bill/:idBill', ticketController.GetRoomByIDBill);
@@ -24,12 +26,14 @@ router.post('/ticket/customer/:IDCustomer',ticketController.saveBill);
 router.get('/revenue/movie/:IDMovie/theater/:IDTheater', ticketController.GetRevenue);
 router.get('/revenue/theater/:IDTheater', ticketController.GetAllRevenue);
 router.get('/revenue/theater/:IDTheater/showdate', ticketController.GetAllRevenueByDate);
-
 router.get('/revenue/movie/:idMovie', ticketController.GetAllRevenueOfMovie);
 router.get('/room/showing/theater/:IDTheater', ticketController.GetAllRoomCurrentShowing);
 router.post('/chair/:idChair/room/:idRoom', ticketController.updateChair);
 router.delete('/chair/:idChair/room/:idRoom', ticketController.deteleStatusChair);
 router.get('/movie/:idMovie/room/:idRoom', ticketController.GetTicketByMovieAndShowDate);
+router.get('/promotions/:idPromotion',ticketController.getVouchertoCondition);
+router.put('/bill_update/:idBill',ticketController.updateBill);
+router.get('/timerefund/bills/:idBill',ticketController.GetTimeRefund);
 
 
 

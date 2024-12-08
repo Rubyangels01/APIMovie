@@ -143,7 +143,7 @@ exports.getUserByID = async (req, res) => {
 };
 
 exports.createUser = async (req, res) => {
-    const {email, password, username, phone} = req.body;
+    const {email, password, fullname, phone} = req.body;
 
     try {
         const pool = await poolPromise;
@@ -166,13 +166,13 @@ exports.createUser = async (req, res) => {
         // Thêm người dùng vào cơ sở dữ liệu và lấy thông tin chi tiết từ insertResult
         const insertResult = await pool.request()
             
-            .input('username', sql.NVarChar, username)
+            .input('fullname', sql.NVarChar, fullname)
             .input('phone', sql.VarChar, phone)
             
             
             .input('email', sql.VarChar, email)
             .input('password', sql.VarChar, hashedPassword)
-            .query('EXEC ADD_ACCOUNT_USER @Email = @email, @Password = @password, @FullName = @username,@Phone = @phone;');
+            .query('EXEC ADD_ACCOUNT_USER @Email = @email, @Password = @password, @FullName = @fullname,@Phone = @phone;');
     
         // Trả về thông tin chi tiết từ insertResult
         res.status(201).json({ 

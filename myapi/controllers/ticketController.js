@@ -331,7 +331,7 @@ exports.GetTicketByIDUser = async (req, res) => {
 					INNER JOIN ROOMS PH ON LC.IDRoom = PH.IDRoom
 					INNER JOIN THEATERS R ON PH.IDTheater = R.IDTheater
                 WHERE 
-                    KH.IDCustomer = @idUser and showDate >= GetDate();
+                    KH.IDCustomer = @idUser AND HD.TimeRefund IS NULL;
             `);
 
         res.status(200).json({
@@ -348,6 +348,73 @@ exports.GetTicketByIDUser = async (req, res) => {
     }
 };
 
+exports.GetTicketCancelByIDUser = async (req, res) => {
+    const idUser = req.params.idUser;
+
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request()
+            .input('idUser', sql.Int, idUser) // Đảm bảo sử dụng tham số 'idUser' cho truy vấn
+            .query(`
+                SELECT DISTINCT
+                    
+                    P.NAMEMOVIE ,
+                    LC.ShowDate ,
+                    HD.Total ,
+                    V.IDBill ,
+                    HD.Payment ,
+					R.NAMETHEATER,
+					PH.NameRoom
+                FROM 
+                    TICKETS V
+                    INNER JOIN BILLS HD ON V.IDBill = HD.IDBill
+                    INNER JOIN CUSTOMERS KH ON HD.IDCustomer = KH.IDCustomer
+                    INNER JOIN SCHEDULESHOW LC ON V.IDSchedule = LC.IDSchedule
+                    INNER JOIN MOVIE P ON LC.IDMovie = P.IDMOVIE
+					INNER JOIN ROOMS PH ON LC.IDRoom = PH.IDRoom
+					INNER JOIN THEATERS R ON PH.IDTheater = R.IDTheater
+                WHERE 
+                    KH.IDCustomer = @idUser AND HD.TimeRefund IS NOT NULL;
+            `);
+
+        res.status(200).json({
+            code: 200,
+            message: 'success',
+            data: result.recordset
+        });
+    } catch (err) {
+        console.error(err); // In lỗi ra console để dễ dàng debug
+        res.status(500).json({
+            code: 500,
+            message: err.message
+        });
+    }
+};
+// Get promotion by idpromotion
+exports.GetPromotionByID = async (req, res) => {
+    const idPromotion = req.params.idPromotion;
+
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request()
+            .input('idPromotion', sql.Int, idPromotion) // Đảm bảo sử dụng tham số 'idUser' cho truy vấn
+            .query(`
+                Select * from PROMOTION where IDPromotion = @idPromotion
+            `);
+
+        res.status(200).json({
+            code: 200,
+            message: 'success',
+            data: result.recordset
+        });
+    } catch (err) {
+        console.error(err); // In lỗi ra console để dễ dàng debug
+        res.status(500).json({
+            code: 500,
+            message: err.message
+        });
+    }
+};
 exports.GetTicketByIDUserAndBill = async (req, res) => {
     const IDCustomer = req.params.IDCustomer;
     const idBill = req.params.idBill;
@@ -414,6 +481,60 @@ exports.GetTicketByMovieAndShowDate = async (req, res) => {
         });
     }
 };
+
+// Lấy tất cả các voucher mà người dùng đủ điều kiện để áp dụng
+// Nếu số tiền bill bằng hoặc lớn hơn số tiền đáp ứng điều kiện thì sẽ lấy ra các voucher đó
+
+exports.getVouchertoCondition = async (req, res) => {
+    const totalBill = req.query.totalBill;
+    const idCustomer = req.params.idCustomer;
+    
+    try {
+        const pool = await poolPromise;
+       // const date = moment(showdate, 'YYYY-MM-DDTHH:mm:ss');
+            
+        // if (!date.isValid()) {
+        //     return res.status(400).json({
+        //         code: 400,
+        //         message: 'Invalid StartTime format'
+        //     });
+        // }
+
+        // Định dạng lại ngày giờ
+        //const formattedDate = date.format('YYYY-MM-DD HH:mm:ss');
+        const result = await pool.request()
+            .input('totalBill', sql.VarChar, totalBill) 
+            .input('idCustomer',sql.Int,idCustomer)
+            .query(`
+                SELECT * 
+FROM PROMOTION P
+WHERE 
+    @toTalBill >= P.ToTalBill
+    AND GETDATE() >= P.StartDate
+    AND GETDATE() <= P.EndDate
+    AND NOT EXISTS (
+        SELECT 1 
+        FROM BILLS B 
+        WHERE B.IDPromotion = P.IDPromotion
+          AND B.IDCustomer = @idCustomer
+    );
+
+            `);
+
+        res.status(200).json({
+            code: 200,
+            message: 'success',
+            data: result.recordset
+        });
+    } catch (err) {
+        console.error(err); // In lỗi ra console để dễ dàng debug
+        res.status(500).json({
+            code: 500,
+            message: err.message
+        });
+    }
+};
+
 
 
 exports.GetOrderedByIDUser = async (req, res) => {
@@ -726,21 +847,19 @@ exports.getAllChair = async (req, res) => {
 
 exports.saveBill = async (req, res) => {
     const IDCustomer = req.params.IDCustomer;
-    const {Payment,Total } = req.body;
+    const { Payment, Total, IDPromotion } = req.body;
     
     try {
         const pool = await poolPromise;
         
-       
-
         const insertResult = await pool.request()
             .input('IDCustomer', sql.Int, IDCustomer)
             .input('Payment', sql.NVarChar, Payment)
-            .input('Total',sql.VarChar,Total)
-            .query('INSERT INTO BILLS (IDCustomer,Payment,Total) OUTPUT INSERTED.* VALUES (@IDCustomer,@Payment, @Total)');
+            .input('Total', sql.VarChar, Total)
+            .input('IDPromotion', sql.Int, IDPromotion || null)  // Set IDPromotion to null if not provided
+            .query('INSERT INTO BILLS (IDCustomer, Payment, Total, IDPromotion) OUTPUT INSERTED.* VALUES (@IDCustomer, @Payment, @Total, @IDPromotion)');
 
-            
-            res.status(201).json({
+        res.status(201).json({
             code: 201,
             message: 'success',
             data: insertResult.recordset[0]
@@ -753,6 +872,8 @@ exports.saveBill = async (req, res) => {
         });
     }
 };
+
+
 
 exports.GetRevenue = async (req, res) => {
     const IDMovie = req.params.IDMovie;
@@ -850,6 +971,87 @@ exports.GetRevenue = async (req, res) => {
          res.status(500).json({ message: err.message });
      }
  };
+
+ 
+
+ exports.updateBill = async (req, res) => {
+    const timeRefund  = req.query.timeRefund;
+    const idBill = req.params.idBill; // Đảm bảo rằng bạn đang truyền đúng tên tham số
+
+    try {
+        const pool = await poolPromise;
+        const date = moment(timeRefund, 'YYYY-MM-DDTHH:mm:ss');
+        console.log(timeRefund);
+            
+        if (!date.isValid()) {
+            return res.status(400).json({
+                code: 400,
+                message: 'Invalid StartTime format'
+            });
+        }
+
+        // Định dạng lại ngày giờ
+        const formattedDate = date.format('YYYY-MM-DD HH:mm:ss');
+        // Nếu có sự thay đổi thì trả về, còn nếu không có sự thay đổi (dữ liệu vẫn như cũ) thì trả về 0
+        const updateResult = await pool.request()
+            .input('timeRefund', sql.VarChar, formattedDate)
+            .input('idBill',sql.Int,idBill)
+            .query(`
+                UPDATE BILLS SET TimeRefund = @timeRefund
+                WHERE IDBill = @idBill;
+                SELECT @@ROWCOUNT AS affectedRows;
+            `);
+
+        const affectedRows = updateResult.recordset[0].affectedRows;
+
+        if (affectedRows === 0) {
+            res.status(200).json({
+                code: 200,
+                message: 'Update failed',
+                data: {
+                    
+                }
+
+            });
+        } else {
+            
+
+            res.status(200).json({
+                code: 200,
+                message: 'Update successful',
+                data: {
+                    
+                }
+            });
+        }
+
+    } catch (err) {
+        res.status(500).json({
+            code: 500,
+            message: err.message
+        });
+    }
+};
+
+exports.GetTimeRefund = async (req, res) => {
+    const IDBill  =req.params.idBill;
+     try {
+         const pool = await poolPromise;
+         const result = await pool.request()
+         .input("IDBill",sql.Int,IDBill)
+         .query('select timeRefund from bills where idbill = @IDBill');
+         res.status(200).json(
+             {
+                 code:200,
+                 message:'success',
+                 data: result.recordset
+             }
+         );
+     } catch (err) {
+         res.status(500).json({ message: err.message });
+     }
+ };
+
 // const transaction = new sql.Transaction(pool);
 //         await transaction.begin();
 

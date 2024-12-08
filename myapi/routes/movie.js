@@ -17,9 +17,12 @@ router.get('/ticket/movie/:idMovie', movieController.getTicketMovie);
 router.get('/schedule/theater/:idTheater', movieController.getMovieScheduleByTheaterandDate);
 router.get('/showtime/theater/:idTheater', movieController.getShowtimeOfMovie);
 router.get('/movie/:id', movieController.getMovieByID);
+router.put('/movie/:idMovie', movieController.updateStatusMovie);
 router.get('/type/movie/:id', movieController.getTypeMovie);
 router.get('/rooms/theater/:idTheater/movie', movieController.getRoomNotHaveMovieByIDTheater);
 router.post('/schedule/theater',movieController.createSchedule);
+router.post('/voucher', movieController.createVoucher);
+
 const storage1 = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, 'uploads/imagetheater/'); // Thư mục lưu trữ ảnh
