@@ -1,4 +1,4 @@
-const { sql, poolPromise } = require('../config/database');
+const { sql } = require('../config/database');
 const { query } = require('express');
 const jwt = require('jsonwebtoken');
 const { DateTime } = require('mssql');
@@ -8,7 +8,7 @@ exports.getRevenueByMovie = async (req, res) =>
     {
         const idmovie = req.params.idMovie;
         try{
-            const pool = await poolPromise;
+            const pool = await req.poolPromise;
             const result = await pool.request()
             .input('idmovie',sql.Int,idmovie)
             .query('SELECT SUM(CAST(PriceTicket AS INT)) AS TotalPrice FROM TICKETS WHERE  IDMovie = @idmovie;');
@@ -47,7 +47,7 @@ exports.getTicketCountByMovie = async (req, res) => {
     const idmovie = req.params.idMovie;
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const result = await pool.request()
             .input('idMovie', sql.Int, idmovie)
             .query('SELECT COUNT(*) AS NumberOfTickets FROM TICKETS WHERE IDMovie = @idMovie');
@@ -74,7 +74,7 @@ exports.getNumberTicketAndRevenue = async (req, res) => {
     const idmovie = req.params.idMovie;
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const result = await pool.request()
             .input('idMovie', sql.Int, idmovie)
             .query('SELECT COUNT(*) AS NumberTicket,SUM(CAST(t.PriceTicket AS DECIMAL(10, 2))) AS TotalRevenue FROM TICKETS t INNER JOIN SCHEDULESHOW s ON t.IDScheduleShow = s.IDSchedule WHERE s.IDMovie = @idMovie;');
@@ -104,7 +104,7 @@ exports.getShowDateOfMovie = async (req, res) => {
     const idmovie = req.params.idMovie;
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const result = await pool.request()
             .input('idMovie', sql.Int, idmovie)
             .query('SELECT DISTINCT CAST(s.ShowDate AS DATE) AS dateShow FROM SCHEDULESHOW s WHERE s.IDMovie = @idMovie AND s.ShowDate > GETDATE();');
@@ -138,7 +138,7 @@ exports.getHourShowOfDate = async (req, res) => {
     
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const result = await pool.request()
             .input('idMovie', sql.Int, idmovie)
             .input('showDate', sql.Date, showDate)
@@ -180,7 +180,7 @@ exports.getTheatersShowAndhourShow = async (req, res) => {
     const showDate = req.query.showDate;
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         
 
         // Truy vấn lấy danh sách các rạp chiếu phim duy nhất
@@ -264,7 +264,7 @@ exports.getRoomBySchedule = async (req, res) => {
     try {
         
 
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const result = await pool.request()
             .input('idMovie', sql.Int, idMovie)
             .input('showDate', sql.VarChar, showDate)
@@ -309,7 +309,7 @@ exports.GetTicketByIDUser = async (req, res) => {
     const idUser = req.params.idUser;
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const result = await pool.request()
             .input('idUser', sql.Int, idUser) // Đảm bảo sử dụng tham số 'idUser' cho truy vấn
             .query(`
@@ -352,7 +352,7 @@ exports.GetTicketCancelByIDUser = async (req, res) => {
     const idUser = req.params.idUser;
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const result = await pool.request()
             .input('idUser', sql.Int, idUser) // Đảm bảo sử dụng tham số 'idUser' cho truy vấn
             .query(`
@@ -395,7 +395,7 @@ exports.GetPromotionByID = async (req, res) => {
     const idPromotion = req.params.idPromotion;
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const result = await pool.request()
             .input('idPromotion', sql.Int, idPromotion) // Đảm bảo sử dụng tham số 'idUser' cho truy vấn
             .query(`
@@ -420,7 +420,7 @@ exports.GetTicketByIDUserAndBill = async (req, res) => {
     const idBill = req.params.idBill;
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const result = await pool.request()
             .input('IDCustomer', sql.Int, IDCustomer) 
             .input('idBill', sql.Int, idBill)// Đảm bảo sử dụng tham số 'idUser' cho truy vấn
@@ -447,7 +447,7 @@ exports.GetTicketByMovieAndShowDate = async (req, res) => {
     const idRoom = req.params.idRoom;
     const showdate = req.query.showdate;
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const date = moment(showdate, 'YYYY-MM-DDTHH:mm:ss');
             
         if (!date.isValid()) {
@@ -490,7 +490,7 @@ exports.getVouchertoCondition = async (req, res) => {
     const idCustomer = req.params.idCustomer;
     
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
        // const date = moment(showdate, 'YYYY-MM-DDTHH:mm:ss');
             
         // if (!date.isValid()) {
@@ -541,7 +541,7 @@ exports.GetOrderedByIDUser = async (req, res) => {
     const idUser = req.params.idUser;
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const result = await pool.request()
             .input('idUser', sql.Int, idUser) // Đảm bảo sử dụng tham số 'idUser' cho truy vấn
             .query(`
@@ -583,7 +583,7 @@ exports.GetChairByIDBill = async (req, res) => {
     const idBill = req.params.idBill;
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const result = await pool.request()
             .input('idBill', sql.Int, idBill) // Đảm bảo sử dụng tham số 'idUser' cho truy vấn
             .query(`
@@ -617,7 +617,7 @@ exports.GetRoomByIDBill = async (req, res) => {
     const idBill = req.params.idBill;
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const result = await pool.request()
             .input('idBill', sql.Int, idBill) // Đảm bảo sử dụng tham số 'idUser' cho truy vấn
             .query(`
@@ -653,7 +653,7 @@ exports.createBillAndTicket = async (req, res) => {
     const { IDBill, IDRoom, IDMovie, ShowDate, listIDChair } = req.body;
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
 
         // Kiểm tra nếu bất kỳ tham số nào là null hoặc undefined
         if (!IDBill || !IDRoom || !IDMovie || !ShowDate || !listIDChair || listIDChair.length === 0) {
@@ -710,7 +710,7 @@ exports.updateChair = async (req, res) => {
     const showDate = req.query.showDate; 
     
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const date = moment(showDate, 'YYYY-MM-DDTHH:mm:ss');
             
         if (!date.isValid()) {
@@ -760,7 +760,7 @@ exports.deteleStatusChair = async (req, res) => {
     const showDate = req.query.showDate; 
     
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const date = moment(showDate, 'YYYY-MM-DDTHH:mm:ss');
             
         if (!date.isValid()) {
@@ -809,7 +809,7 @@ exports.getAllChair = async (req, res) => {
  
     try {
         
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const date = moment(showDate, 'YYYY-MM-DDTHH:mm:ss');
             
         if (!date.isValid()) {
@@ -850,7 +850,7 @@ exports.saveBill = async (req, res) => {
     const { Payment, Total, IDPromotion } = req.body;
     
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         
         const insertResult = await pool.request()
             .input('IDCustomer', sql.Int, IDCustomer)
@@ -879,7 +879,7 @@ exports.GetRevenue = async (req, res) => {
     const IDMovie = req.params.IDMovie;
     const IDTheater  =req.params.IDTheater;
      try {
-         const pool = await poolPromise;
+         const pool = await req.poolPromise;
          const result = await pool.request()
          .input("IDMovie",sql.Int,IDMovie)
          .input("IDTheater",sql.Int,IDTheater)
@@ -898,7 +898,7 @@ exports.GetRevenue = async (req, res) => {
  exports.GetAllRevenue = async (req, res) => {
     const IDTheater  =req.params.IDTheater;
      try {
-         const pool = await poolPromise;
+         const pool = await req.poolPromise;
          const result = await pool.request()
          .input("IDTheater",sql.Int,IDTheater)
          .query('EXEC GetAllRevenuOfMovie @IDTheater');
@@ -918,7 +918,7 @@ exports.GetRevenue = async (req, res) => {
     const IDTheater  =req.params.IDTheater;
     const ShowDate = req.query.ShowDate;
      try {
-         const pool = await poolPromise;
+         const pool = await req.poolPromise;
          const result = await pool.request()
          .input("IDTheater",sql.Int,IDTheater)
          .input("ShowDate", sql.Date,ShowDate)
@@ -937,7 +937,7 @@ exports.GetRevenue = async (req, res) => {
  exports.GetAllRevenueOfMovie = async (req, res) => {
     const idMovie  =req.params.idMovie;
      try {
-         const pool = await poolPromise;
+         const pool = await req.poolPromise;
          const result = await pool.request()
          .input("IDMovie",sql.Int,idMovie)
          .query('EXEC GetAllMovieStatistics @IDMovie');
@@ -956,7 +956,7 @@ exports.GetRevenue = async (req, res) => {
  exports.GetAllRoomCurrentShowing = async (req, res) => {
     const IDTheater  =req.params.IDTheater;
      try {
-         const pool = await poolPromise;
+         const pool = await req.poolPromise;
          const result = await pool.request()
          .input("IDTheater",sql.Int,IDTheater)
          .query('EXEC GetCurrentMoviesSchedule @IDTheater');
@@ -979,7 +979,7 @@ exports.GetRevenue = async (req, res) => {
     const idBill = req.params.idBill; // Đảm bảo rằng bạn đang truyền đúng tên tham số
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const date = moment(timeRefund, 'YYYY-MM-DDTHH:mm:ss');
         console.log(timeRefund);
             
@@ -1036,7 +1036,7 @@ exports.GetRevenue = async (req, res) => {
 exports.GetTimeRefund = async (req, res) => {
     const IDBill  =req.params.idBill;
      try {
-         const pool = await poolPromise;
+         const pool = await req.poolPromise;
          const result = await pool.request()
          .input("IDBill",sql.Int,IDBill)
          .query('select timeRefund from bills where idbill = @IDBill');

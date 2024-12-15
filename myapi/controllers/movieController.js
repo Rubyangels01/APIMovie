@@ -1,15 +1,13 @@
 
-const { sql, poolPromise } = require('../config/database');
+const { sql } = require('../config/database');
 const { query } = require('express');
 const Promotion = require('../models/Promotion');
 
 const jwt = require('jsonwebtoken');
 
-
-
 exports.getAllMovies = async (req, res) => {
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const result = await pool.request().query('EXEC GetMoviesWithMostTickets');
         res.status(200).json(
             {
@@ -24,7 +22,7 @@ exports.getAllMovies = async (req, res) => {
 };
 exports.GetUpcomingMovies = async (req, res) => {
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const result = await pool.request().query('EXEC GetUpcomingMovies');
         res.status(200).json(
             {
@@ -43,7 +41,7 @@ exports.getMovieByID = async (req, res) =>
     {
         const idMovie = req.params.id;
         try{
-            const pool = await poolPromise;
+            const pool = await req.poolPromise;
             const result = await pool.request()
             .input('idMovie',sql.Int,idMovie)
             .query('SELECT * FROM MOVIE WHERE IDMOVIE = @idMovie');
@@ -84,7 +82,7 @@ exports.getMovieByID = async (req, res) =>
             });
         }
         try {
-            const pool = await poolPromise;
+            const pool = await req.poolPromise;
             const imageUrl = `http://192.168.1.186:3002/${image.replace(/\\/g, '/')}`;
            
     
@@ -113,7 +111,7 @@ exports.getMovieByID = async (req, res) =>
         {
             
             try{
-                const pool = await poolPromise;
+                const pool = await req.poolPromise;
                 const result = await pool.request()
                 
                 .query('SELECT * FROM THEATERS');
@@ -139,7 +137,7 @@ exports.getMovieByID = async (req, res) =>
                 const idTheater = req.params.idTheater
                 
                 try{
-                    const pool = await poolPromise;
+                    const pool = await req.poolPromise;
                     const result = await pool.request()
                     .input("IDTheater",sql.Int,idTheater)
                     .query('EXEC GetMoviesByTheater @IDTheater');
@@ -164,7 +162,7 @@ exports.getMovieByID = async (req, res) =>
         const idTheater = req.params.idtheater;
     
         try {
-            const pool = await poolPromise;
+            const pool = await req.poolPromise;
     
             if (idTheater == null) {
                 return res.status(400).json({
@@ -197,7 +195,7 @@ exports.getMovieByID = async (req, res) =>
     
     
         try {
-            const pool = await poolPromise;
+            const pool = await req.poolPromise;
             const insertResult = await pool.request()
                 .input('namePromotion', sql.NVarChar, promotionData.namePromotion)
                 .input('percentSell', sql.Int, promotionData.percentSell)
@@ -237,7 +235,7 @@ exports.getMovieByID = async (req, res) =>
         let transaction; // Định nghĩa biến transaction bên ngoài khối try
     
         try {
-            const pool = await poolPromise;
+            const pool = await req.poolPromise;
             
             // Bắt đầu giao dịch
             transaction = new sql.Transaction(pool);
@@ -294,7 +292,7 @@ exports.getMovieByID = async (req, res) =>
         const idroom = req.params.idRoom; // Đảm bảo rằng bạn đang truyền đúng tên tham số
     
         try {
-            const pool = await poolPromise;
+            const pool = await req.poolPromise;
     
             // Nếu có sự thay đổi thì trả về, còn nếu không có sự thay đổi (dữ liệu vẫn như cũ) thì trả về 0
             const updateResult = await pool.request()
@@ -345,7 +343,7 @@ exports.updateStatusMovie = async (req, res) => {
     const idMovie = req.params.idMovie; // Đảm bảo rằng bạn đang truyền đúng tên tham số
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
 
         // Nếu có sự thay đổi thì trả về, còn nếu không có sự thay đổi (dữ liệu vẫn như cũ) thì trả về 0
         const updateResult = await pool.request()
@@ -384,7 +382,7 @@ exports.updateStatusMovie = async (req, res) => {
         const idtheater = req.params.idTheater;
     
         try {
-            const pool = await poolPromise;
+            const pool = await req.poolPromise;
             const result = await pool.request()
                 .input('idtheater', sql.Int, idtheater)
                 .query('SELECT * FROM ROOMS WHERE IDTHEATER = @idtheater');
@@ -411,7 +409,7 @@ exports.updateStatusMovie = async (req, res) => {
         // Kiểm tra các tham số đầu vào
         
     
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const transaction = new sql.Transaction(pool);
     
         try {
@@ -461,7 +459,7 @@ exports.updateStatusMovie = async (req, res) => {
         const numberOfShowtimes =req.query.numberOfShowtimes;
         
         try {
-            const pool = await poolPromise;
+            const pool = await req.poolPromise;
             const result = await pool.request()
                 .input('idMovie', sql.Int, idMovie)
                 .query('SELECT Time FROM Movies WHERE IDMovie = @idMovie');
@@ -533,7 +531,7 @@ exports.updateStatusMovie = async (req, res) => {
             // Định dạng lại ngày giờ
             const formattedDate = date.format('YYYY-MM-DD HH:mm:ss');
     
-            const pool = await poolPromise;
+            const pool = await req.poolPromise;
             const result = await pool.request()
                 .input('StartTime', sql.VarChar, formattedDate)
                 .input('IDTheater', sql.Int, idTheater)
@@ -592,7 +590,7 @@ exports.createScheduleIntemp = async (req, res) => {
         });
     }
 
-    const pool = await poolPromise;
+    const pool = await req.poolPromise;
     const transaction = new sql.Transaction(pool);
 
     try {
@@ -625,7 +623,7 @@ exports.createScheduleIntemp = async (req, res) => {
 };
 exports.GetDataIntemp = async (req, res) => {
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
 
         // Bắt đầu giao dịch
         const transaction = new sql.Transaction(pool);
@@ -682,7 +680,7 @@ exports.DeleteTemp = async (req, res) => {
     
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const result = await pool.request()
             .query('DELETE FROM TEMP');
 
@@ -703,7 +701,7 @@ exports.getMovieByNameMovie = async (req, res) => {
     const SearchTerm = req.query.SearchTerm;
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const result = await pool.request()
             .input('SearchTerm', sql.NVarChar, SearchTerm)
             .query('EXEC Search_NameMovie @SearchTerm');
@@ -728,7 +726,7 @@ exports.getTicketMovie = async (req, res) => {
     const idMovie = req.params.idMovie;
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const result = await pool.request()
             .input('idMovie', sql.Int, idMovie)
             .query('select COUNT(IDMovie) As NumberTicket from TICKETS t join SCHEDULESHOW sch on sch.IDSchedule = t.IDSchedule where sch.IDMovie = @idMovie');
@@ -752,7 +750,7 @@ exports.getMovieScheduleByTheaterandDate = async (req, res) => {
     const idTheater = req.params.idTheater;
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const result = await pool.request()
             .input('ShowDate', sql.Date, ShowDate)
             .input('IDTheater', sql.Int, idTheater)
@@ -780,7 +778,7 @@ exports.getShowtimeOfMovie = async (req, res) => {
     const idTheater = req.params.idTheater;
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const result = await pool.request()
             .input('ShowDate', sql.Date, ShowDate)
             .input('IDMovie', sql.Int, IDMovie)
@@ -805,7 +803,7 @@ exports.getShowtimeOfMovie = async (req, res) => {
 exports.getTypeMovie = async (req, res) => {
     const IDMovie = req.params.id;
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const result = await pool.request()
             .input('IDMovie', sql.Int, IDMovie)
             .query('select t.IDType,t.NameType from TYPEMOVIES  t join DETAILTYPE dt on dt.IDType = t.IDType where dt.IDMovie = @IDMovie;');

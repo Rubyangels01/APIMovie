@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 
-const { sql, poolPromise } = require('../config/database');
+const { sql } = require('../config/database');
 const { query } = require('express');
 const jwt = require('jsonwebtoken');
 
@@ -12,7 +12,7 @@ const secretKey = 'ruby0310';
 exports.login = async (req, res) => {
     const { Email, PassWord } = req.body;
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         if (!Email || !PassWord) {
             return res.status(400).json({
                 code: 400,
@@ -62,7 +62,7 @@ exports.login = async (req, res) => {
 exports.loginManager = async (req, res) => {
     const { Email, PassWord } = req.body;
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         if (!Email || !PassWord) {
             return res.status(400).json({
                 code: 400,
@@ -115,7 +115,7 @@ exports.getUserByID = async (req, res) => {
     const userId = req.params.id; // Lấy id người dùng từ request parameter
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const result = await pool.request()
             .input('idUser', sql.Int, userId)
             .query('SELECT * FROM CUSTOMERS WHERE IdCustomer = @idUser');
@@ -146,7 +146,7 @@ exports.createUser = async (req, res) => {
     const {email, password, fullname, phone} = req.body;
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
 
         // Kiểm tra xem email đã tồn tại trong cơ sở dữ liệu
         const emailCheckResult = await pool.request()
@@ -190,7 +190,7 @@ exports.createManager = async (req, res) => {
     const {email, password, age, username, phone, gender } = req.body;
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
 
         // Kiểm tra xem email đã tồn tại trong cơ sở dữ liệu
         const emailCheckResult = await pool.request()
@@ -232,7 +232,7 @@ exports.createManager = async (req, res) => {
 
 exports.getAllUsers = async (req, res) => {
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const result = await pool.request().query('SELECT * FROM MANAGERS');
         res.status(200).json(
             {
@@ -252,7 +252,7 @@ exports.updateAccount = async (req, res) => {
     const idUser = req.params.idUser; // Đảm bảo rằng bạn đang truyền đúng tên tham số
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
 
         // Nếu có sự thay đổi thì trả về, còn nếu không có sự thay đổi (dữ liệu vẫn như cũ) thì trả về 0
         const updateResult = await pool.request()
@@ -307,7 +307,7 @@ exports.updatePassWord = async (req, res) => {
     const idUser = req.params.idUser;
 
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
 
         // Lấy mật khẩu hiện tại từ cơ sở dữ liệu
         const result = await pool.request()
@@ -377,7 +377,7 @@ exports.updatePassWord = async (req, res) => {
 exports.GetTheaterByUser = async (req, res) => {
     const Email = req.params.Email
     try {
-        const pool = await poolPromise;
+        const pool = await req.poolPromise;
         const result = await pool.request()
         .input("Email",sql.NVarChar,Email)
         .query('EXEC GetTheatersByManagerEmail @Email');
